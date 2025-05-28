@@ -17,12 +17,12 @@ app.use(cors({
 app.use(express.json());
 
 // Health check
-app.get('/api/health', (req, res) => {
+app.get('/health', (req, res) => {
   res.json({ status: 'OK', message: 'Hanna Backend API is running!' });
 });
 
-// GET /api/writings - Get all writings
-app.get('/api/writings', async (req, res) => {
+// GET /writings - Get all writings
+app.get('/writings', async (req, res) => {
   try {
     const writings = await prisma.writing.findMany({
       orderBy: { createdAt: 'desc' },
@@ -35,8 +35,8 @@ app.get('/api/writings', async (req, res) => {
   }
 });
 
-// GET /api/writings/:id - Get specific writing
-app.get('/api/writings/:id', async (req, res) => {
+// GET /writings/:id - Get specific writing
+app.get('/writings/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const writing = await prisma.writing.findUnique({
@@ -55,8 +55,8 @@ app.get('/api/writings/:id', async (req, res) => {
   }
 });
 
-// POST /api/writings - Create new writing
-app.post('/api/writings', async (req, res) => {
+// POST /writings - Create new writing
+app.post('/writings', async (req, res) => {
   try {
     const { title, content, sectionId, mood, date, likes } = req.body;
     
@@ -83,8 +83,8 @@ app.post('/api/writings', async (req, res) => {
   }
 });
 
-// PUT /api/writings/:id - Update writing
-app.put('/api/writings/:id', async (req, res) => {
+// PUT /writings/:id - Update writing
+app.put('/writings/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { title, content, sectionId, mood, date, likes } = req.body;
@@ -117,8 +117,8 @@ app.put('/api/writings/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/writings/:id - Delete writing
-app.delete('/api/writings/:id', async (req, res) => {
+// DELETE /writings/:id - Delete writing
+app.delete('/writings/:id', async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -137,8 +137,8 @@ app.delete('/api/writings/:id', async (req, res) => {
   }
 });
 
-// GET /api/sections - Get all sections
-app.get('/api/sections', async (req, res) => {
+// GET /sections - Get all sections
+app.get('/sections', async (req, res) => {
   try {
     const sections = await prisma.section.findMany({
       orderBy: { order: 'asc' },
@@ -150,8 +150,8 @@ app.get('/api/sections', async (req, res) => {
   }
 });
 
-// POST /api/sections - Create new section
-app.post('/api/sections', async (req, res) => {
+// POST /sections - Create new section
+app.post('/sections', async (req, res) => {
   try {
     const { title, iconName, accent, order } = req.body;
     
@@ -178,8 +178,8 @@ app.post('/api/sections', async (req, res) => {
   }
 });
 
-// PUT /api/sections/:id - Update section
-app.put('/api/sections/:id', async (req, res) => {
+// PUT /sections/:id - Update section
+app.put('/sections/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { title, iconName, accent, order } = req.body;
@@ -204,8 +204,8 @@ app.put('/api/sections/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/sections/:id - Delete section
-app.delete('/api/sections/:id', async (req, res) => {
+// DELETE /sections/:id - Delete section
+app.delete('/sections/:id', async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -224,8 +224,8 @@ app.delete('/api/sections/:id', async (req, res) => {
   }
 });
 
-// GET /api/settings - Get site settings
-app.get('/api/settings', async (req, res) => {
+// GET /settings - Get site settings
+app.get('/settings', async (req, res) => {
   try {
     let settings = await prisma.siteSettings.findUnique({
       where: { id: 'singleton' },
@@ -244,8 +244,8 @@ app.get('/api/settings', async (req, res) => {
   }
 });
 
-// POST /api/settings - Update site settings
-app.post('/api/settings', async (req, res) => {
+// POST /settings - Update site settings
+app.post('/settings', async (req, res) => {
   try {
     const { mainHeader, twitterUrl, instagramUrl, snapchatUrl } = req.body;
     

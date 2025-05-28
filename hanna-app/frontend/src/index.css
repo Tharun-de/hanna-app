@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Add styles for highlighting the scrolled-to section */
+@layer components {
+  .highlight-scroll-target {
+    @apply ring-2 ring-offset-4 ring-offset-gray-900 ring-amber-300 transition-all duration-1000 ease-out;
+  }
+}
+
+/* Ensure smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Style for the temporary highlight on scroll target */
+@layer components {
+  .highlight-scroll-target {
+    /* Use @apply to leverage Tailwind classes if needed, or define custom CSS */
+    transition: background-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+    /* Start slightly brighter */
+    background-color: rgba(255, 255, 255, 0.05); 
+    /* Add a subtle glow/border */
+    box-shadow: 0 0 15px 2px rgba(167, 139, 250, 0.4); /* Example using purple-400 */
+    /* Define an animation for pulsing */
+    animation: pulse-highlight 1.5s ease-out;
+  }
+}
+
+@keyframes pulse-highlight {
+  0% {
+    background-color: rgba(255, 255, 255, 0.05);
+    box-shadow: 0 0 15px 2px rgba(167, 139, 250, 0.4);
+  }
+  50% {
+    background-color: rgba(255, 255, 255, 0.08); /* Slightly brighter middle */
+    box-shadow: 0 0 25px 4px rgba(167, 139, 250, 0.6); /* Brighter glow */
+  }
+  100% {
+     /* Fade back to almost original - transition handles the final smooth fade out */
+    background-color: rgba(255, 255, 255, 0.01);
+    box-shadow: 0 0 15px 2px rgba(167, 139, 250, 0.2);
+  }
+}

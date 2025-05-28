@@ -11,33 +11,35 @@ datasource db {
 }
 
 model Writing {
-  id        String    @id @default(cuid())
-  title     String?
-  content   String
-  sectionId String?
-  mood      String?
-  date      String? // Consider changing to DateTime if you store actual dates
-  likes     Int       @default(0)
+  id        Int       @id @default(autoincrement())
+  title     String
+  content   String    @default("")
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+  sections  Section[]
 
-  section   Section?  @relation(fields: [sectionId], references: [id], onDelete: SetNull)
-
-  @@index([sectionId])
+  @@map("writings")
 }
 
 model Section {
-  id        String    @id @default(cuid())
+  id        Int      @id @default(autoincrement())
   title     String
-  iconName  String    // Store the name of the icon (e.g., "BookOpen")
-  accent    String    // Store the accent color name (e.g., "emerald")
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  order     Int       @default(0) // For maintaining section order
+  content   String   @default("")
+  order     Int      @default(0)
+  writingId Int
+  writing   Writing  @relation(fields: [writingId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  writings  Writing[] // A section can have multiple writings
+  @@map("sections")
+}
 
-  @@index([order])
+model Setting {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
+
+  @@map("settings")
 }
 
 model SiteSettings {

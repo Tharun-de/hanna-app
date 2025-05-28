@@ -13,19 +13,32 @@ export default async function handler(req, res) {
   }
 
   try {
-    if (req.method === 'POST') {
-      const { writingId, title, content, order } = req.body;
+    if (req.method === 'GET') {
+      const sections = await prisma.section.findMany({
+        include: {
+          writings: true
+        },
+        orderBy: { order: 'asc' }
+      });
+      return res.status(200).json(sections);
+    }
 
-      if (!writingId || !title) {
-        return res.status(400).json({ error: 'Writing ID and title are required' });
+    if (req.method === 'POST') {
+      const { title, iconName, accent, order } = req.body;
+
+      if (!title || !iconName || !accent) {
+        return res.status(400).json({ error: 'Title, iconName, and accent are required' });
       }
 
       const section = await prisma.section.create({
         data: {
-          writingId: parseInt(writingId),
           title,
-          content: content || '',
+          iconName,
+          accent,
           order: order || 0
+        },
+        include: {
+          writings: true
         }
       });
 

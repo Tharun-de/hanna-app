@@ -17,11 +17,9 @@ export default async function handler(req, res) {
   try {
     if (req.method === 'GET') {
       const writing = await prisma.writing.findUnique({
-        where: { id: parseInt(id) },
+        where: { id: String(id) },
         include: {
-          sections: {
-            orderBy: { order: 'asc' }
-          }
+          section: true
         }
       });
 
@@ -36,16 +34,14 @@ export default async function handler(req, res) {
       const { title, content } = req.body;
 
       const writing = await prisma.writing.update({
-        where: { id: parseInt(id) },
+        where: { id: String(id) },
         data: {
           ...(title !== undefined && { title }),
           ...(content !== undefined && { content }),
           updatedAt: new Date()
         },
         include: {
-          sections: {
-            orderBy: { order: 'asc' }
-          }
+          section: true
         }
       });
 
@@ -53,14 +49,9 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'DELETE') {
-      // Delete all sections first
-      await prisma.section.deleteMany({
-        where: { writingId: parseInt(id) }
-      });
-
       // Delete the writing
       await prisma.writing.delete({
-        where: { id: parseInt(id) }
+        where: { id: String(id) }
       });
 
       return res.status(200).json({ message: 'Writing deleted successfully' });

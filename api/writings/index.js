@@ -16,9 +16,7 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       const writings = await prisma.writing.findMany({
         include: {
-          sections: {
-            orderBy: { order: 'asc' }
-          }
+          section: true
         },
         orderBy: { createdAt: 'desc' }
       });
@@ -26,7 +24,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const { title, content } = req.body;
+      const { title, content, sectionId } = req.body;
       
       if (!title) {
         return res.status(400).json({ error: 'Title is required' });
@@ -35,12 +33,11 @@ export default async function handler(req, res) {
       const writing = await prisma.writing.create({
         data: {
           title,
-          content: content || ''
+          content: content || '',
+          sectionId: sectionId || null
         },
         include: {
-          sections: {
-            orderBy: { order: 'asc' }
-          }
+          section: true
         }
       });
 

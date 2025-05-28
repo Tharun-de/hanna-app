@@ -16,15 +16,19 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'PUT') {
-      const { title, content, order } = req.body;
+      const { title, iconName, accent, order } = req.body;
 
       const section = await prisma.section.update({
-        where: { id: parseInt(id) },
+        where: { id: String(id) },
         data: {
           ...(title !== undefined && { title }),
-          ...(content !== undefined && { content }),
+          ...(iconName !== undefined && { iconName }),
+          ...(accent !== undefined && { accent }),
           ...(order !== undefined && { order }),
           updatedAt: new Date()
+        },
+        include: {
+          writings: true
         }
       });
 
@@ -33,7 +37,7 @@ export default async function handler(req, res) {
 
     if (req.method === 'DELETE') {
       await prisma.section.delete({
-        where: { id: parseInt(id) }
+        where: { id: String(id) }
       });
 
       return res.status(200).json({ message: 'Section deleted successfully' });

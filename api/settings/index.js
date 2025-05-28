@@ -14,32 +14,48 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
-      const settings = await prisma.setting.findMany();
-      const settingsObj = {};
-      settings.forEach(setting => {
-        settingsObj[setting.key] = setting.value;
+      let settings = await prisma.siteSettings.findUnique({
+        where: { id: 'singleton' }
       });
-      return res.status(200).json(settingsObj);
+      
+      // If no settings exist, create default ones
+      if (!settings) {
+        settings = await prisma.siteSettings.create({
+          data: {
+            id: 'singleton',
+            mainHeader: 'Hanna App',
+            twitterUrl: '',
+            instagramUrl: '',
+            snapchatUrl: ''
+          }
+        });
+      }
+      
+      return res.status(200).json(settings);
     }
 
     if (req.method === 'PUT') {
-      const updates = req.body;
+      const { mainHeader, twitterUrl, instagramUrl, snapchatUrl } = req.body;
       
-      for (const [key, value] of Object.entries(updates)) {
-        await prisma.setting.upsert({
-          where: { key },
-          update: { value: String(value) },
-          create: { key, value: String(value) }
-        });
-      }
-
-      const settings = await prisma.setting.findMany();
-      const settingsObj = {};
-      settings.forEach(setting => {
-        settingsObj[setting.key] = setting.value;
+      const settings = await prisma.siteSettings.upsert({
+        where: { id: 'singleton' },
+        update: {
+          ...(mainHeader !== undefined && { mainHeader }),
+          ...(twitterUrl !== undefined && { twitterUrl }),
+          ...(instagramUrl !== undefined && { instagramUrl }),
+          ...(snapchatUrl !== undefined && { snapchatUrl }),
+          updatedAt: new Date()
+        },
+        create: {
+          id: 'singleton',
+          mainHeader: mainHeader || 'Hanna App',
+          twitterUrl: twitterUrl || '',
+          instagramUrl: instagramUrl || '',
+          snapchatUrl: snapchatUrl || ''
+        }
       });
 
-      return res.status(200).json(settingsObj);
+      return res.status(200).json(settings);
     }
 
     return res.status(405).json({ error: 'Method not allowed' });

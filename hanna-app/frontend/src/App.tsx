@@ -5,6 +5,9 @@ import WritingSection from './components/WritingSection';
 import AdminPage from './components/AdminPage';
 // import { allWritings as importedWritings, WritingData } from './data/writings'; // Will fetch from API
 
+// At the top with other constants or inside the App component if preferred
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+
 // Define available accent colors
 export type AccentColor = 'rose' | 'purple' | 'blue' | 'red' | 'amber' | 'emerald';
 
@@ -104,7 +107,7 @@ function App() {
       let newSocialLinks = socialLinks;
 
       if (dataType === 'all' || dataType === 'writings') {
-        const writingsRes = await fetch('/api/writings');
+        const writingsRes = await fetch(`${API_BASE_URL}/api/writings`);
         if (!writingsRes.ok) {
           throw new Error(`Failed to fetch writings: ${writingsRes.status} ${writingsRes.statusText}`);
         }
@@ -113,7 +116,7 @@ function App() {
       }
 
       if (dataType === 'all' || dataType === 'sections') {
-        const sectionsRes = await fetch('/api/sections');
+        const sectionsRes = await fetch(`${API_BASE_URL}/api/sections`);
         if (!sectionsRes.ok) {
           throw new Error(`Failed to fetch sections: ${sectionsRes.status} ${sectionsRes.statusText}`);
         }
@@ -129,7 +132,7 @@ function App() {
       }
 
       if (dataType === 'all' || dataType === 'settings') {
-        const settingsRes = await fetch('/api/settings');
+        const settingsRes = await fetch(`${API_BASE_URL}/api/settings`);
         if (!settingsRes.ok) {
           throw new Error(`Failed to fetch settings: ${settingsRes.status} ${settingsRes.statusText}`);
         }

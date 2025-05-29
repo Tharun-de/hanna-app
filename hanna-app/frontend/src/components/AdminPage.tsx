@@ -3,6 +3,9 @@ import { Edit3, Trash2, PlusCircle, Search, Filter, Settings, BookOpen as Defaul
 import { motion, AnimatePresence } from 'framer-motion';
 import { WritingData, SectionConfig, AccentColor, SocialLinks } from '../App';
 
+// Get API_BASE_URL from environment variables
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+
 // Modal Component
 const Modal: React.FC<{ isOpen: boolean; onClose: () => void; title: string; children: React.ReactNode }> = ({ isOpen, onClose, title, children }) => {
   if (!isOpen) return null;
@@ -138,7 +141,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
   const handleDeleteWriting = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this writing?')) {
       try {
-        const response = await fetch(`/api/writings/${id}`, { method: 'DELETE' });
+        const response = await fetch(`${API_BASE_URL}/api/writings/${id}`, { method: 'DELETE' });
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({ message: 'Failed to delete writing and could not parse error.' }));
           throw new Error(errorData.message || 'Failed to delete writing.');
@@ -171,13 +174,13 @@ const AdminPage: React.FC<AdminPageProps> = ({
     try {
       let response;
       if (editingWriting && editingWriting.id) {
-        response = await fetch(`/api/writings/${editingWriting.id}`, {
+        response = await fetch(`${API_BASE_URL}/api/writings/${editingWriting.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
       } else {
-        response = await fetch('/api/writings', {
+        response = await fetch(`${API_BASE_URL}/api/writings`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
@@ -231,7 +234,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
   const handleDeleteSection = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this section? This will also unassign poems from this section.')) {
       try {
-        const response = await fetch(`/api/sections/${id}`, { method: 'DELETE' });
+        const response = await fetch(`${API_BASE_URL}/api/sections/${id}`, { method: 'DELETE' });
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({ message: 'Failed to delete section and could not parse error.' }));
           throw new Error(errorData.message || 'Failed to delete section.');
@@ -259,13 +262,13 @@ const AdminPage: React.FC<AdminPageProps> = ({
     try {
       let response;
       if (editingSection && editingSection.id) {
-        response = await fetch(`/api/sections/${editingSection.id}`, {
+        response = await fetch(`${API_BASE_URL}/api/sections/${editingSection.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
       } else {
-        response = await fetch('/api/sections', {
+        response = await fetch(`${API_BASE_URL}/api/sections`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
@@ -293,39 +296,45 @@ const AdminPage: React.FC<AdminPageProps> = ({
   };
 
   const handleSectionOrderChange = async (index: number, direction: 'up' | 'down') => {
-    const newSectionsArray = [...currentSections]; // Operate on a copy of current state 
+    const orderedSections = [...currentSections]; // Create a mutable copy
+    const sectionToMove = orderedSections[index];
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
 
-    if (targetIndex < 0 || targetIndex >= newSectionsArray.length) return;
+    if (targetIndex < 0 || targetIndex >= orderedSections.length) return; // Boundary check
 
-    // Swap elements
-    [newSectionsArray[index], newSectionsArray[targetIndex]] = [newSectionsArray[targetIndex], newSectionsArray[index]];
+    // Swap orders
+    const tempOrder = sectionToMove.order;
+    sectionToMove.order = orderedSections[targetIndex].order;
+    orderedSections[targetIndex].order = tempOrder;
     
-    // Assign new order property based on the new array positions
-    const sectionsToUpdateOrder = newSectionsArray.map((section, idx) => ({
-      id: section.id,
-      order: idx, // The new order is its index in the modified array
-    }));
+    // Update UI optimistically first by re-sorting based on new order
+    orderedSections.sort((a, b) => a.order - b.order);
+    setCurrentSections(orderedSections);
 
     try {
-      const response = await fetch('/api/sections', { // Endpoint for batch reordering
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(sectionsToUpdateOrder),
+      // Create an array of promises for all updates
+      const updatePromises = orderedSections.map(section =>
+        fetch(`${API_BASE_URL}/api/sections/${section.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: section.title, iconName: section.iconName, accent: section.accent, order: section.order }),
+        })
+      );
+      
+      const responses = await Promise.all(updatePromises);
+      
+      responses.forEach(response => {
+        if (!response.ok) {
+          // Consider more sophisticated error handling here, e.g., collecting all errors
+          console.error('Failed to update one or more section orders', response.statusText);
+        }
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Operation failed and could not parse error.' }));
-        throw new Error(errorData.message || 'Failed to reorder sections.');
-      }
-      // The API response might be the updated list of sections or a success message.
-      // await response.json(); 
-      alert('Sections reordered successfully!');
-      refreshData('sections'); // Refresh data from server to ensure UI consistency
+      await refreshData('sections'); // Refresh from server to ensure consistency
     } catch (error) {
-      console.error('Error reordering sections:', error);
-      alert(`Error reordering sections: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      // Optionally, revert local state if API call fails, or rely on next prop update from App.tsx
+      console.error('Error updating section orders:', error);
+      alert('Failed to update section orders. Please refresh.');
+      await refreshData('sections'); // Revert to server state on error
     }
   };
 
@@ -351,62 +360,39 @@ const AdminPage: React.FC<AdminPageProps> = ({
   };
 
   const handleSaveSocialLinks = async () => {
-    const payload = {
-      mainHeader: currentMainHeader, // Send current header to prevent it from being cleared
-      twitterUrl: currentSocialLinks.twitter || null,
-      instagramUrl: currentSocialLinks.instagram || null,
-      snapchatUrl: currentSocialLinks.snapchat || null, // Ensure Prisma accepts empty strings as null if desired by schema
-    };
     try {
-      const response = await fetch('/api/settings', {
-        method: 'POST',
+      const payload = {
+        twitterUrl: currentSocialLinks.twitter,
+        instagramUrl: currentSocialLinks.instagram,
+        snapchatUrl: currentSocialLinks.snapchat,
+      };
+      const response = await fetch(`${API_BASE_URL}/api/settings`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Operation failed and could not parse error.' }));
-        throw new Error(errorData.message || 'Failed to save social links.');
-      }
-      await response.json(); // Contains the updated settings
-      alert('Social links saved!');
-      refreshData('settings'); // Refresh settings from server
-      // Or, if API returns the full updated settings object:
-      // const updatedSettings = await response.json();
-      // setMainHeader(updatedSettings.mainHeader || '');
-      // setSocialLinks({ 
-      //   twitter: updatedSettings.twitterUrl || '', 
-      //   instagram: updatedSettings.instagramUrl || '', 
-      //   snapchat: updatedSettings.snapchatUrl || '' 
-      // });
+      if (!response.ok) throw new Error('Failed to save social links');
+      alert('Social links updated successfully!');
+      refreshData('settings');
     } catch (error) {
       console.error('Error saving social links:', error);
-      alert(`Error saving social links: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      alert('Error saving social links');
     }
   };
 
   const handleSaveMainHeader = async () => {
-    const payload = {
-      mainHeader: currentMainHeader || null, // currentMainHeader is linked to the input field
-      twitterUrl: currentSocialLinks.twitter || null,
-      instagramUrl: currentSocialLinks.instagram || null,
-      snapchatUrl: currentSocialLinks.snapchat || null,
-    };
     try {
-      const response = await fetch('/api/settings', {
-        method: 'POST',
+      const response = await fetch(`${API_BASE_URL}/api/settings`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ mainHeader: currentMainHeader }),
       });
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Operation failed and could not parse error.' }));
-        throw new Error(errorData.message || 'Failed to save main header.');
-      }
-      await response.json(); // Contains the updated settings
-      alert('Main header saved!');
-      refreshData('settings'); // Refresh settings from server
+      if (!response.ok) throw new Error('Failed to save main header');
+      alert('Main header updated successfully!');
+      refreshData('settings');
     } catch (error) {
       console.error('Error saving main header:', error);
-      alert(`Error saving main header: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      alert('Error saving main header');
     }
   };
 

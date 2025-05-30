@@ -37,7 +37,6 @@ Thumbs.db
 .vercel/
 
 # Prisma
-prisma/migrations/
 
 # Temporary files
 *.tmp

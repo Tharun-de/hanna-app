@@ -3,8 +3,8 @@ import { Edit3, Trash2, PlusCircle, Search, Filter, Settings, BookOpen as Defaul
 import { motion, AnimatePresence } from 'framer-motion';
 import { WritingData, SectionConfig, AccentColor, SocialLinks } from '../App';
 
-// Get API_BASE_URL from environment variables
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+// UPDATED API_BASE_URL
+const API_BASE_URL = 'http://localhost:3000/api'; // Points to our new Next.js API
 
 // Modal Component
 const Modal: React.FC<{ isOpen: boolean; onClose: () => void; title: string; children: React.ReactNode }> = ({ isOpen, onClose, title, children }) => {
@@ -45,11 +45,11 @@ interface AdminPageProps {
   refreshData: (dataType?: 'all' | 'writings' | 'sections' | 'settings') => Promise<void>;
 }
 
-// Interface for form data, ensuring title and content are strings for the form
 interface WritingFormData extends Omit<WritingData, 'id' | 'createdAt' | 'updatedAt' | 'section'> {
   id?: string; 
   title: string; 
   content: string;
+  // Other fields like sectionId, mood, date, likes will be ignored by the new API for poems
 }
 
 
@@ -66,9 +66,8 @@ const AdminPage: React.FC<AdminPageProps> = ({
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState<'content' | 'analytics' | 'settings'>('content');
   
-  // Local states for managing data within the admin page, synced with props
-  const [currentWritings, setCurrentWritings] = useState<WritingData[]>(writings);
-  const [editingWriting, setEditingWriting] = useState<WritingData | null>(null);
+  const [currentWritings, setCurrentWritings] = useState<WritingData[]>(writings); // Renaming this to currentPoems might be a next step
+  const [editingWriting, setEditingWriting] = useState<WritingData | null>(null); // Renaming this to editingPoem might be a next step
   const [formData, setFormData] = useState<Partial<WritingFormData>>({ title: '', content: '' });
   const [showAddEditModal, setShowAddEditModal] = useState(false);
 
@@ -85,7 +84,6 @@ const AdminPage: React.FC<AdminPageProps> = ({
 
   const availableIcons = Object.keys(iconMap).map(name => ({ name, IconComponent: iconMap[name] }));
 
-  // Sync local states with props when they change
   useEffect(() => {
     setCurrentWritings(writings);
   }, [writings]);
@@ -105,7 +103,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
   const handleLogin = () => {
     if (passwordInput === HARDCODED_PASSWORD) {
       setIsAuthenticated(true);
-      setPasswordInput(''); // Clear password field
+      setPasswordInput('');
     } else {
       alert('Incorrect password');
     }
@@ -113,44 +111,46 @@ const AdminPage: React.FC<AdminPageProps> = ({
   
   const handleLogout = () => {
     setIsAuthenticated(false);
-    setPasswordInput(''); // Clear password on logout
+    setPasswordInput('');
   };
 
-  // Handlers for Writings (CRUD)
   const handleOpenAddModal = () => {
     setEditingWriting(null); 
-    setFormData({ title: '', content: '', sectionId: sections[0]?.id || undefined, likes: 0, mood: '', date: '' }); // Reset form for new entry, ensure all WritingFormData fields are considered
+    // Keep other fields for now, they will be ignored by API if not part of Poem model
+    setFormData({ title: '', content: '', sectionId: sections[0]?.id || undefined, likes: 0, mood: '', date: '' });
     setShowAddEditModal(true);
   };
 
   const handleOpenEditModal = (writing: WritingData) => {
     setEditingWriting(writing);
+    // Keep other fields for now
     const { id, title, content, sectionId, mood, date, likes } = writing;
     setFormData({
       id,
       title: title || '',
-      content: content || '', // Ensure content is string
+      content: content || '',
       sectionId: sectionId || undefined,
-      mood: mood || '', // Ensure string
-      date: date || '', // Ensure string
+      mood: mood || '',
+      date: date || '',
       likes: likes || 0,
     });
     setShowAddEditModal(true);
   };
   
   const handleDeleteWriting = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this writing?')) {
+    if (window.confirm('Are you sure you want to delete this item?')) { // Changed message slightly
       try {
-        const response = await fetch(`${API_BASE_URL}/api/writings/${id}`, { method: 'DELETE' });
+        // UPDATED fetch URL
+        const response = await fetch(`${API_BASE_URL}/poems/${id}`, { method: 'DELETE' });
         if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ message: 'Failed to delete writing and could not parse error.' }));
-          throw new Error(errorData.message || 'Failed to delete writing.');
+          const errorData = await response.json().catch(() => ({ message: 'Failed to delete item and could not parse error.' }));
+          throw new Error(errorData.message || 'Failed to delete item.');
         }
-        alert('Writing deleted successfully.');
-        refreshData('writings'); // Refresh writings list from server
+        alert('Item deleted successfully.');
+        await refreshData('writings'); // Ensure refresh completes
       } catch (error) {
-        console.error('Error deleting writing:', error);
-        alert(`Error deleting writing: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        console.error('Error deleting item:', error);
+        alert(`Error deleting item: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
   };
@@ -160,45 +160,66 @@ const AdminPage: React.FC<AdminPageProps> = ({
         alert("Title or Content is required.");
         return;
     }
-    const payload: Omit<WritingData, 'id' | 'createdAt' | 'updatedAt' | 'section'> & { id?: string } = {
+    // Payload to match the Poem API (title, content, sectionId)
+    const payload: { 
+      id?: string; 
+      title: string | null; 
+      content: string;
+      sectionId?: string | null;
+      date?: string | null; // Add date to payload type
+      mood?: string | null; // Add mood to payload type
+      likes?: number | null; // Add likes to payload type
+    } = {
       title: formData.title || null, 
-      content: formData.content!, 
-      sectionId: formData.sectionId || null,
-      mood: formData.mood || null,
-      date: formData.date || null,
-      likes: Number(formData.likes) || 0,
+      content: formData.content!,
     };
+
+    if (formData.sectionId && formData.sectionId !== '__ADD_NEW_SECTION__' && formData.sectionId !== '') {
+      payload.sectionId = formData.sectionId;
+    } else {
+      payload.sectionId = null; // Explicitly set to null if not provided or is an invalid placeholder
+    }
+
+    // Add date, mood, and likes to payload if they exist in formData
+    if (formData.date) payload.date = formData.date;
+    if (formData.mood) payload.mood = formData.mood;
+    // Ensure likes is a number, default to 0 if not, or handle as per your preference
+    payload.likes = (typeof formData.likes === 'number' && !isNaN(formData.likes)) ? formData.likes : 0;
+
     if (editingWriting?.id) {
         payload.id = editingWriting.id;
     }
+
     try {
       let response;
       if (editingWriting && editingWriting.id) {
-        response = await fetch(`${API_BASE_URL}/api/writings/${editingWriting.id}`, {
+        // UPDATED fetch URL for PUT
+        response = await fetch(`${API_BASE_URL}/poems/${editingWriting.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(payload), // Send simplified payload
         });
       } else {
-        response = await fetch(`${API_BASE_URL}/api/writings`, {
+        // UPDATED fetch URL for POST
+        response = await fetch(`${API_BASE_URL}/poems`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(payload), // Send simplified payload
         });
       }
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Operation failed and could not parse error.' }));
-        throw new Error(errorData.message || 'Failed to save writing.');
+        throw new Error(errorData.message || 'Failed to save item.');
       }
-      await response.json(); // Result not used, so no assignment needed
-      alert(`Writing ${editingWriting ? 'updated' : 'saved'} successfully!`);
-      refreshData('writings');
+      await response.json(); 
+      alert(`Item ${editingWriting ? 'updated' : 'saved'} successfully!`);
+      await refreshData('writings'); // Ensure refresh completes
       setShowAddEditModal(false);
       setEditingWriting(null); 
       setFormData({ title: '', content: '', sectionId: undefined, mood: '', date: '', likes: 0 });
     } catch (error) {
-      console.error('Error saving writing:', error);
-      alert(`Error saving writing: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('Error saving item:', error);
+      alert(`Error saving item: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -234,13 +255,13 @@ const AdminPage: React.FC<AdminPageProps> = ({
   const handleDeleteSection = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this section? This will also unassign poems from this section.')) {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/sections/${id}`, { method: 'DELETE' });
+        const response = await fetch(`${API_BASE_URL}/sections/${id}`, { method: 'DELETE' });
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({ message: 'Failed to delete section and could not parse error.' }));
           throw new Error(errorData.message || 'Failed to delete section.');
         }
         alert('Section deleted successfully.');
-        refreshData('all'); // Refresh sections and writings (as writings might be unassigned)
+        await refreshData('all'); // Ensure refresh completes (sections and writings)
       } catch (error) {
         console.error('Error deleting section:', error);
         alert(`Error deleting section: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -262,13 +283,13 @@ const AdminPage: React.FC<AdminPageProps> = ({
     try {
       let response;
       if (editingSection && editingSection.id) {
-        response = await fetch(`${API_BASE_URL}/api/sections/${editingSection.id}`, {
+        response = await fetch(`${API_BASE_URL}/sections/${editingSection.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
       } else {
-        response = await fetch(`${API_BASE_URL}/api/sections`, {
+        response = await fetch(`${API_BASE_URL}/sections`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
@@ -280,7 +301,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
       }
       await response.json(); // Result not used
       alert(`Section ${editingSection ? 'updated' : 'saved'} successfully!`);
-      refreshData('sections');
+      await refreshData('sections'); // Ensure refresh completes
       setShowSectionModal(false);
       setEditingSection(null);
       setSectionFormData({ title: '', accent: 'emerald', iconName: 'BookOpen' });
@@ -314,9 +335,9 @@ const AdminPage: React.FC<AdminPageProps> = ({
     try {
       // Create an array of promises for all updates
       const updatePromises = orderedSections.map(section =>
-        fetch(`${API_BASE_URL}/api/sections/${section.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+        fetch(`${API_BASE_URL}/sections/${section.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ title: section.title, iconName: section.iconName, accent: section.accent, order: section.order }),
         })
       );
@@ -361,19 +382,20 @@ const AdminPage: React.FC<AdminPageProps> = ({
 
   const handleSaveSocialLinks = async () => {
     try {
-      const payload = {
+    const payload = {
+        // Field names here should match what the API expects (e.g., twitterUrl)
         twitterUrl: currentSocialLinks.twitter,
         instagramUrl: currentSocialLinks.instagram,
         snapchatUrl: currentSocialLinks.snapchat,
-      };
-      const response = await fetch(`${API_BASE_URL}/api/settings`, {
-        method: 'PUT',
+    };
+      const response = await fetch(`${API_BASE_URL}/settings`, { // Updated endpoint
+        method: 'POST', // Changed to POST, as our API route uses POST for upsert
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
       if (!response.ok) throw new Error('Failed to save social links');
       alert('Social links updated successfully!');
-      refreshData('settings');
+      await refreshData('settings'); // Added await
     } catch (error) {
       console.error('Error saving social links:', error);
       alert('Error saving social links');
@@ -382,14 +404,14 @@ const AdminPage: React.FC<AdminPageProps> = ({
 
   const handleSaveMainHeader = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/settings`, {
-        method: 'PUT',
+      const response = await fetch(`${API_BASE_URL}/settings`, { // Updated endpoint
+        method: 'POST', // Changed to POST
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mainHeader: currentMainHeader }),
       });
       if (!response.ok) throw new Error('Failed to save main header');
       alert('Main header updated successfully!');
-      refreshData('settings');
+      await refreshData('settings'); // Added await
     } catch (error) {
       console.error('Error saving main header:', error);
       alert('Error saving main header');

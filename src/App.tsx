@@ -1,14 +1,14 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { Feather, Heart, Siren as Fire, Star, Sparkles, BookOpen, Menu, X, Settings, Twitter, Instagram, MessageSquare, AlertCircle } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import WritingSection from './components/WritingSection';
 import AdminPage from './components/AdminPage';
-// import { allWritings as importedWritings, WritingData } from './data/writings'; // Will fetch from API
+// import { allWritings as importedWritings, WritingData } from './data/writings'; // Will fetch from API <<<< KEEP COMMENTED
 
 // Define available accent colors
 export type AccentColor = 'rose' | 'purple' | 'blue' | 'red' | 'amber' | 'emerald';
 
-// Consistent type for Writing data, based on API/Prisma model
+// Consistent type for Writing data
 export interface WritingData {
   id: string;
   title?: string | null;
@@ -17,12 +17,12 @@ export interface WritingData {
   mood?: string | null;
   date?: string | null; 
   likes?: number | null;
-  createdAt: string; // ISO Date string from Prisma
-  updatedAt: string; // ISO Date string from Prisma
-  section?: SectionData | null; // Populated by Prisma include if specified
+  createdAt: string; 
+  updatedAt: string; 
+  section?: SectionData | null;
 }
 
-// Type for raw Section data from API/Prisma
+// Type for raw Section data
 export interface SectionData {
   id: string;
   title: string;
@@ -33,7 +33,7 @@ export interface SectionData {
   updatedAt: string;
 }
 
-// Type for Section configuration used in frontend state (includes React icon component)
+// Type for Section configuration
 export type SectionConfig = Omit<SectionData, 'createdAt' | 'updatedAt'> & {
   icon: React.ComponentType<{ className?: string }>;
   iconClass: string;
@@ -41,7 +41,7 @@ export type SectionConfig = Omit<SectionData, 'createdAt' | 'updatedAt'> & {
   bgClass: string;
 };
 
-// Helper to map icon names (strings) to actual components
+// Helper to map icon names
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   BookOpen,
   Heart,
@@ -49,28 +49,18 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Sparkles,
   Fire,
   Feather,
-  // Add any other icons you use
 };
 
-// Define a type for social links (matches SiteSettings model, adjusted for frontend naming)
 export interface SocialLinks {
-  twitter: string; // Corresponds to twitterUrl in SiteSettings
-  instagram: string; // Corresponds to instagramUrl
-  snapchat: string; // Corresponds to snapchatUrl
+  twitter: string;
+  instagram: string;
+  snapchat: string;
 }
 
-// Type for settings data from API/Prisma
-interface SiteSettingsData {
-  id: string;
-  mainHeader?: string | null;
-  twitterUrl?: string | null;
-  instagramUrl?: string | null;
-  snapchatUrl?: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
+// Type for settings data from API/Prisma - NO LONGER USED
+// interface SiteSettingsData { ... }
 
-// Helper function to create UI-specific class names from accent color
+// Helper function to create UI-specific class names
 const getAccentClasses = (accent: AccentColor) => {
   return {
     iconClass: `text-${accent}-400`,
@@ -79,87 +69,46 @@ const getAccentClasses = (accent: AccentColor) => {
   };
 };
 
+// Example Static Data
+const exampleSections: SectionConfig[] = [
+  { 
+    id: 'section1', 
+    title: 'Welcome', 
+    iconName: 'BookOpen', 
+    accent: 'blue', 
+    order: 1,
+    icon: iconMap['BookOpen'] || BookOpen,
+    ...getAccentClasses('blue')
+  },
+];
+
+const exampleWritings: WritingData[] = [
+  { 
+    id: 'writing1', 
+    title: 'Static Welcome Note', 
+    content: 'This is a statically loaded piece of content. The backend connections have been removed.', 
+    sectionId: 'section1', 
+    createdAt: new Date().toISOString(), 
+    updatedAt: new Date().toISOString(),
+    mood: 'Neutral',
+    date: new Date().toLocaleDateString(),
+    likes: 0
+  },
+];
+
+
 function App() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  
+  const [isLoading, setIsLoading] = useState(false); // Default to false
+  const [error, setError] = useState<string | null>(null); // Default to null
 
-  // State for data fetched from API
-  const [writings, setWritings] = useState<WritingData[]>([]);
-  const [sections, setSections] = useState<SectionConfig[]>([]); // Holds SectionConfig with mapped icons
-  const [mainHeader, setMainHeader] = useState<string>('Fictitious Scribbles');
-  const [socialLinks, setSocialLinks] = useState<SocialLinks>({ twitter: '', instagram: '', snapchat: '' });
+  const [writings, setWritings] = useState<WritingData[]>(exampleWritings);
+  const [sections, setSections] = useState<SectionConfig[]>(exampleSections); 
+  const [mainHeader, setMainHeader] = useState<string>('Hanna (Static Mode)');
+  const [socialLinks, setSocialLinks] = useState<SocialLinks>({ twitter: '#', instagram: '#', snapchat: '#' });
 
-  const fetchData = useCallback(async (dataType: 'all' | 'writings' | 'sections' | 'settings' = 'all') => {
-    if (dataType === 'all') {
-      setIsLoading(true);
-      setError(null);
-    }
-    
-    try {
-      let newWritings = writings;
-      let newSectionsConfig = sections;
-      let newMainHeader = mainHeader;
-      let newSocialLinks = socialLinks;
-
-      if (dataType === 'all' || dataType === 'writings') {
-        const writingsRes = await fetch('/api/writings');
-        if (!writingsRes.ok) {
-          throw new Error(`Failed to fetch writings: ${writingsRes.status} ${writingsRes.statusText}`);
-        }
-        newWritings = await writingsRes.json() as WritingData[];
-        setWritings(newWritings);
-      }
-
-      if (dataType === 'all' || dataType === 'sections') {
-        const sectionsRes = await fetch('/api/sections');
-        if (!sectionsRes.ok) {
-          throw new Error(`Failed to fetch sections: ${sectionsRes.status} ${sectionsRes.statusText}`);
-        }
-        const sectionsDataFromAPI = await sectionsRes.json() as SectionData[];
-        newSectionsConfig = sectionsDataFromAPI
-          .sort((a, b) => a.order - b.order)
-          .map(sec => ({
-            ...sec,
-            icon: iconMap[sec.iconName] || BookOpen,
-            ...getAccentClasses(sec.accent as AccentColor),
-          }));
-        setSections(newSectionsConfig);
-      }
-
-      if (dataType === 'all' || dataType === 'settings') {
-        const settingsRes = await fetch('/api/settings');
-        if (!settingsRes.ok) {
-          throw new Error(`Failed to fetch settings: ${settingsRes.status} ${settingsRes.statusText}`);
-        }
-        const settingsData = await settingsRes.json() as SiteSettingsData;
-        newMainHeader = settingsData.mainHeader || 'Fictitious Scribbles';
-        newSocialLinks = {
-          twitter: settingsData.twitterUrl || '',
-          instagram: settingsData.instagramUrl || '',
-          snapchat: settingsData.snapchatUrl || '',
-        };
-        setMainHeader(newMainHeader);
-        setSocialLinks(newSocialLinks);
-      }
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load content';
-      setError(errorMessage);
-      if (dataType === 'all') setMainHeader('Error loading content');
-    } finally {
-      if (dataType === 'all') setIsLoading(false);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Keep this with an empty dependency array for initial load logic, specific updates will be handled by AdminPage
-
-  useEffect(() => {
-    fetchData('all');
-  }, [fetchData]); // Now fetchData is stable due to useCallback
-
-  // Group writings by their section ID for easier access
-  // The `section.writings` will now be derived here for `sectionsWithWritings`
   const sectionsWithWritings = useMemo(() => {
     return sections.map(section => ({
       ...section,
@@ -167,7 +116,6 @@ function App() {
     }));
   }, [writings, sections]);
 
-  // Helper function to handle smooth scrolling and highlight
   const handlePoemLinkClick = (event: React.MouseEvent<HTMLAnchorElement>, sectionId: string, poemId: string) => {
     event.preventDefault();
     const poemElement = document.getElementById(poemId);
@@ -186,8 +134,7 @@ function App() {
     }
     setIsMobileMenuOpen(false);
   };
-
-  // Function to handle clicks on links within the mobile menu
+  
   const handleMobileLinkClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault(); 
     const href = event.currentTarget.getAttribute('href');
@@ -214,62 +161,53 @@ function App() {
     }
   };
   
-  // Error state
-  if (error && !isLoading) {
+  if (error) { 
     return (
       <div className="min-h-screen bg-gray-900 text-gray-200 flex items-center justify-center p-4">
         <div className="max-w-md w-full text-center">
-          <div className="mb-6">
-            <AlertCircle className="mx-auto h-16 w-16 text-red-400" />
-          </div>
-          <h1 className="text-2xl font-serif mb-4">Unable to load content</h1>
+          <AlertCircle className="mx-auto h-16 w-16 text-red-400" />
+          <h1 className="text-2xl font-serif mb-4">An error occurred</h1>
           <p className="text-gray-400 mb-6">{error}</p>
-          <button
-            onClick={() => fetchData('all')}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
-          >
-            Try again
-          </button>
+          {/* Button to retry can be removed or disabled if no fetchData exists */}
         </div>
       </div>
     );
   }
   
-  // Loading state
-  if (isLoading && writings.length === 0 && sections.length === 0) {
+  if (isLoading) { 
     return (
       <div className="min-h-screen bg-gray-900 text-gray-200 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto mb-4"></div>
-          <div className="text-2xl font-serif">Loading Content...</div>
-        </div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400"></div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-200">
-      <button
-        onClick={() => setShowAdmin(true)}
-        className="fixed bottom-4 right-4 p-3 bg-gray-800 hover:bg-gray-700 rounded-full shadow-lg transition-colors z-50"
+      <button 
+        onClick={() => setShowAdmin(true)} 
+        className="fixed bottom-4 right-4 p-3 bg-gray-800 hover:bg-gray-700 rounded-full shadow-lg transition-colors z-50" // Ensure z-index is high enough
         title="Admin Panel"
       >
         <Settings size={24} />
       </button>
 
       {showAdmin && (
-        <AdminPage
-          writings={writings} 
+        <AdminPage 
+          writings={writings}
           mainHeader={mainHeader}
-          sections={sections} 
+          sections={sections}
           iconMap={iconMap}
           socialLinks={socialLinks}
-          
-          refreshData={fetchData} 
+          refreshData={async () => { 
+            console.log("Admin operation attempted in static mode. Data changes will not persist."); 
+            // alert("Admin Page is in read-only mode. Changes will not be saved."); // Optional user alert
+          }}
+          // onClose={() => setShowAdmin(false)} // Keep as per original AdminPage design
         />
       )}
-
-      {!showAdmin && (
+      
+      {!showAdmin && ( // This condition might need to be adjusted based on how AdminPage is displayed
         <>
           <header className="relative h-screen flex items-center justify-center overflow-hidden">
             <div 
@@ -357,7 +295,7 @@ function App() {
           </nav>
 
           {isMobileMenuOpen && (
-            <motion.div
+            <motion.div 
               initial={{ opacity: 0, x: "-100%" }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: "-100%" }}
@@ -377,8 +315,16 @@ function App() {
                 {sectionsWithWritings.map((section) => (
                   <div key={`${section.id}-mobile`}>
                     <a 
-                      href={`#${section.id}`}
-                      onClick={handleMobileLinkClick} 
+                      href={`#${section.id}`} 
+                      onClick={(e) => {
+                        handleMobileLinkClick(e); // Use the existing handler
+                        // Direct scroll and close for main section links
+                        const targetElement = document.getElementById(section.id);
+                        if (targetElement) {
+                            targetElement.scrollIntoView({ behavior: 'smooth' });
+                        }
+                        setIsMobileMenuOpen(false);
+                      }}
                       className={`flex items-center space-x-3 p-2 rounded-md text-lg font-semibold ${section.navClass} transition-colors`}
                     >
                       <section.icon className={section.iconClass} />
@@ -390,7 +336,7 @@ function App() {
                           <a 
                             key={writing.id}
                             href={`#${writing.id}`}
-                            onClick={handleMobileLinkClick}
+                            onClick={handleMobileLinkClick} // This handles poems within sections
                             className={`block text-base text-gray-400 hover:text-gray-100 hover:${section.iconClass} transition-colors py-1 pl-6`}
                             title={writing.title || 'Untitled'}
                           >
@@ -401,6 +347,16 @@ function App() {
                     )}
                   </div>
                 ))}
+                 { (socialLinks.twitter || socialLinks.instagram || socialLinks.snapchat) && (
+                  <div className="mt-8 pt-6 border-t border-gray-700">
+                    <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">Follow</h3>
+                    <div className="flex space-x-4">
+                      {socialLinks.twitter && <a href={socialLinks.twitter} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white"><Twitter size={22}/></a>}
+                      {socialLinks.instagram && <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-pink-500"><Instagram size={22}/></a>}
+                      {socialLinks.snapchat && <a href={socialLinks.snapchat} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-yellow-400"><MessageSquare size={22}/></a>}
+                    </div>
+                  </div>
+                )}
               </nav>
             </motion.div>
           )}
@@ -411,11 +367,18 @@ function App() {
                 key={section.id}
                 id={section.id}
                 title={section.title}
-                icon={<section.icon className={section.iconClass} />}
+                icon={<section.icon className={section.iconClass} />} // Passing the component instance
                 writings={section.writings}
                 accent={section.accent as AccentColor}
               />
             ))}
+            {sectionsWithWritings.length === 0 && !isLoading && (
+                <div className="text-center text-gray-500 py-20">
+                    <Sparkles size={48} className="mx-auto mb-4 opacity-50" />
+                    <p className="text-xl font-serif">No content has been published yet.</p>
+                    <p className="mt-2 text-sm">The digital inkwell is awaiting stories.</p>
+                </div>
+            )}
           </main>
         </>
       )}

@@ -137,18 +137,19 @@ const AdminPage: React.FC<AdminPageProps> = ({
   
   const handleDeleteWriting = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this writing?')) {
-      try {
-        const response = await fetch(`/api/writings/${id}`, { method: 'DELETE' });
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ message: 'Failed to delete writing and could not parse error.' }));
-          throw new Error(errorData.message || 'Failed to delete writing.');
-        }
-        alert('Writing deleted successfully.');
-        refreshData('writings'); // Refresh writings list from server
-      } catch (error) {
-        console.error('Error deleting writing:', error);
-        alert(`Error deleting writing: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      }
+      alert('Static mode: Deleting writings is disabled.');
+      // try {
+      //   const response = await fetch(`/api/writings/${id}`, { method: 'DELETE' });
+      //   if (!response.ok) {
+      //     const errorData = await response.json().catch(() => ({ message: 'Failed to delete writing and could not parse error.' }));
+      //     throw new Error(errorData.message || 'Failed to delete writing.');
+      //   }
+      //   alert('Writing deleted successfully.');
+      //   refreshData('writings'); // Refresh writings list from server
+      // } catch (error) {
+      //   console.error('Error deleting writing:', error);
+      //   alert(`Error deleting writing: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      // }
     }
   };
   
@@ -157,46 +158,51 @@ const AdminPage: React.FC<AdminPageProps> = ({
         alert("Title or Content is required.");
         return;
     }
-    const payload: Omit<WritingData, 'id' | 'createdAt' | 'updatedAt' | 'section'> & { id?: string } = {
-      title: formData.title || null, 
-      content: formData.content!, 
-      sectionId: formData.sectionId || null,
-      mood: formData.mood || null,
-      date: formData.date || null,
-      likes: Number(formData.likes) || 0,
-    };
-    if (editingWriting?.id) {
-        payload.id = editingWriting.id;
-    }
-    try {
-      let response;
-      if (editingWriting && editingWriting.id) {
-        response = await fetch(`/api/writings/${editingWriting.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-      } else {
-        response = await fetch('/api/writings', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-      }
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Operation failed and could not parse error.' }));
-        throw new Error(errorData.message || 'Failed to save writing.');
-      }
-      await response.json(); // Result not used, so no assignment needed
-      alert(`Writing ${editingWriting ? 'updated' : 'saved'} successfully!`);
-      refreshData('writings');
-      setShowAddEditModal(false);
-      setEditingWriting(null); 
-      setFormData({ title: '', content: '', sectionId: undefined, mood: '', date: '', likes: 0 });
-    } catch (error) {
-      console.error('Error saving writing:', error);
-      alert(`Error saving writing: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
+    alert('Static mode: Saving writings is disabled.');
+    // const payload: Omit<WritingData, 'id' | 'createdAt' | 'updatedAt' | 'section'> & { id?: string } = {
+    //   title: formData.title || null, 
+    //   content: formData.content!, 
+    //   sectionId: formData.sectionId || null,
+    //   mood: formData.mood || null,
+    //   date: formData.date || null,
+    //   likes: Number(formData.likes) || 0,
+    // };
+    // if (editingWriting?.id) {
+    //     payload.id = editingWriting.id;
+    // }
+    // try {
+    //   let response;
+    //   if (editingWriting && editingWriting.id) {
+    //     response = await fetch(`/api/writings/${editingWriting.id}`, {
+    //       method: 'PUT',
+    //       headers: { 'Content-Type': 'application/json' },
+    //       body: JSON.stringify(payload),
+    //     });
+    //   } else {
+    //     response = await fetch('/api/writings', {
+    //       method: 'POST',
+    //       headers: { 'Content-Type': 'application/json' },
+    //       body: JSON.stringify(payload),
+    //     });
+    //   }
+    //   if (!response.ok) {
+    //     const errorData = await response.json().catch(() => ({ message: 'Operation failed and could not parse error.' }));
+    //     throw new Error(errorData.message || 'Failed to save writing.');
+    //   }
+    //   await response.json(); 
+    //   alert(`Writing ${editingWriting ? 'updated' : 'saved'} successfully!`);
+    //   refreshData('writings');
+    //   setShowAddEditModal(false);
+    //   setEditingWriting(null); 
+    //   setFormData({ title: '', content: '', sectionId: undefined, mood: '', date: '', likes: 0 });
+    // } catch (error) {
+    //   console.error('Error saving writing:', error);
+    //   alert(`Error saving writing: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    // }
+    // Instead of saving, just close the modal for UI feedback in static mode
+    setShowAddEditModal(false);
+    setEditingWriting(null);
+    setFormData({ title: '', content: '', sectionId: undefined, mood: '', date: '', likes: 0 });
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -229,19 +235,20 @@ const AdminPage: React.FC<AdminPageProps> = ({
   };
 
   const handleDeleteSection = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this section? This will also unassign poems from this section.')) {
-      try {
-        const response = await fetch(`/api/sections/${id}`, { method: 'DELETE' });
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ message: 'Failed to delete section and could not parse error.' }));
-          throw new Error(errorData.message || 'Failed to delete section.');
-        }
-        alert('Section deleted successfully.');
-        refreshData('all'); // Refresh sections and writings (as writings might be unassigned)
-      } catch (error) {
-        console.error('Error deleting section:', error);
-        alert(`Error deleting section: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      }
+    if (window.confirm('Are you sure you want to delete this section?')) {
+      alert('Static mode: Deleting sections is disabled.');
+      // try {
+      //   const response = await fetch(`/api/sections/${id}`, { method: 'DELETE' });
+      //   if (!response.ok) {
+      //     const errorData = await response.json().catch(() => ({ message: 'Failed to delete section and could not parse error.' }));
+      //     throw new Error(errorData.message || 'Failed to delete section.');
+      //   }
+      //   alert('Section deleted successfully.');
+      //   refreshData('all'); 
+      // } catch (error) {
+      //   console.error('Error deleting section:', error);
+      //   alert(`Error deleting section: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      // }
     }
   };
 
@@ -250,41 +257,39 @@ const AdminPage: React.FC<AdminPageProps> = ({
         alert("Section title, accent, and icon are required.");
         return;
     }
-    const payload: Partial<Omit<SectionConfig, 'icon' | 'iconClass' | 'navClass' | 'bgClass'>> = {
-        title: sectionFormData.title,
-        accent: sectionFormData.accent,
-        iconName: sectionFormData.iconName,
-        order: sectionFormData.order 
-    };
-    try {
-      let response;
-      if (editingSection && editingSection.id) {
-        response = await fetch(`/api/sections/${editingSection.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-      } else {
-        response = await fetch('/api/sections', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-      }
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Operation failed and could not parse error.' }));
-        throw new Error(errorData.message || 'Failed to save section.');
-      }
-      await response.json(); // Result not used
-      alert(`Section ${editingSection ? 'updated' : 'saved'} successfully!`);
-      refreshData('sections');
-      setShowSectionModal(false);
-      setEditingSection(null);
-      setSectionFormData({ title: '', accent: 'emerald', iconName: 'BookOpen' });
-    } catch (error) {
-      console.error('Error saving section:', error);
-      alert(`Error saving section: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
+    alert('Static mode: Saving sections is disabled.');
+    // const payload = { ...sectionFormData, id: editingSection?.id };
+    // try {
+    //   let response;
+    //   if (editingSection && editingSection.id) {
+    //     response = await fetch(`/api/sections/${editingSection.id}`, {
+    //       method: 'PUT',
+    //       headers: { 'Content-Type': 'application/json' },
+    //       body: JSON.stringify(payload),
+    //     });
+    //   } else {
+    //     response = await fetch('/api/sections', {
+    //       method: 'POST',
+    //       headers: { 'Content-Type': 'application/json' },
+    //       body: JSON.stringify(payload),
+    //     });
+    //   }
+    //   if (!response.ok) {
+    //     const errorData = await response.json().catch(() => ({ message: 'Operation failed and could not parse error.' }));
+    //     throw new Error(errorData.message || 'Failed to save section.');
+    //   }
+    //   await response.json();
+    //   alert(`Section ${editingSection ? 'updated' : 'saved'} successfully!`);
+    //   refreshData('all');
+    //   setShowSectionModal(false);
+    //   setEditingSection(null);
+    // } catch (error) {
+    //   console.error('Error saving section:', error);
+    //   alert(`Error saving section: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    // }
+    // Instead of saving, just close the modal for UI feedback
+    setShowSectionModal(false);
+    setEditingSection(null);
   };
   
   const handleSectionFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -292,41 +297,46 @@ const AdminPage: React.FC<AdminPageProps> = ({
     setSectionFormData(prev => ({ ...prev, [name]: value as AccentColor | string }));
   };
 
-  const handleSectionOrderChange = async (index: number, direction: 'up' | 'down') => {
-    const newSectionsArray = [...currentSections]; // Operate on a copy of current state 
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
-
-    if (targetIndex < 0 || targetIndex >= newSectionsArray.length) return;
-
-    // Swap elements
-    [newSectionsArray[index], newSectionsArray[targetIndex]] = [newSectionsArray[targetIndex], newSectionsArray[index]];
-    
-    // Assign new order property based on the new array positions
-    const sectionsToUpdateOrder = newSectionsArray.map((section, idx) => ({
-      id: section.id,
-      order: idx, // The new order is its index in the modified array
-    }));
-
-    try {
-      const response = await fetch('/api/sections', { // Endpoint for batch reordering
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(sectionsToUpdateOrder),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Operation failed and could not parse error.' }));
-        throw new Error(errorData.message || 'Failed to reorder sections.');
-      }
-      // The API response might be the updated list of sections or a success message.
-      // await response.json(); 
-      alert('Sections reordered successfully!');
-      refreshData('sections'); // Refresh data from server to ensure UI consistency
-    } catch (error) {
-      console.error('Error reordering sections:', error);
-      alert(`Error reordering sections: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      // Optionally, revert local state if API call fails, or rely on next prop update from App.tsx
-    }
+  const handleSectionOrderChange = async (sectionId: string, direction: 'up' | 'down') => {
+    alert('Static mode: Changing section order is disabled.');
+    // const sectionIndex = currentSections.findIndex(s => s.id === sectionId);
+    // if (sectionIndex === -1) return;
+    // const newSections = [...currentSections];
+    // const sectionToMove = newSections[sectionIndex];
+    // let newOrder = sectionToMove.order;
+    // if (direction === 'up') {
+    //   if (sectionIndex === 0) return;
+    //   const prevSection = newSections[sectionIndex - 1];
+    //   newOrder = prevSection.order;
+    //   prevSection.order = sectionToMove.order;
+    //   sectionToMove.order = newOrder;
+    // } else {
+    //   if (sectionIndex === newSections.length - 1) return;
+    //   const nextSection = newSections[sectionIndex + 1];
+    //   newOrder = nextSection.order;
+    //   nextSection.order = sectionToMove.order;
+    //   sectionToMove.order = newOrder;
+    // }
+    // newSections.sort((a, b) => a.order - b.order);
+    // const finalSectionsToSave = newSections.map((sec, idx) => ({ ...sec, order: idx + 1 }));
+    // try {
+    //   const response = await fetch('/api/sections/reorder', {
+    //     method: 'POST',
+    //     headers: { 'Content-Type': 'application/json' },
+    //     body: JSON.stringify({
+    //       sections: finalSectionsToSave.map(s => ({ id: s.id, order: s.order }))
+    //     }),
+    //   });
+    //   if (!response.ok) {
+    //     const errorData = await response.json().catch(() => ({ message: 'Failed to reorder sections.' }));
+    //     throw new Error(errorData.message || 'Failed to reorder sections.');
+    //   }
+    //   alert('Sections reordered successfully.');
+    //   refreshData('sections');
+    // } catch (error) {
+    //   console.error('Error reordering sections:', error);
+    //   alert(`Error reordering sections: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    // }
   };
 
 
@@ -351,63 +361,43 @@ const AdminPage: React.FC<AdminPageProps> = ({
   };
 
   const handleSaveSocialLinks = async () => {
-    const payload = {
-      mainHeader: currentMainHeader, // Send current header to prevent it from being cleared
-      twitterUrl: currentSocialLinks.twitter || null,
-      instagramUrl: currentSocialLinks.instagram || null,
-      snapchatUrl: currentSocialLinks.snapchat || null, // Ensure Prisma accepts empty strings as null if desired by schema
-    };
-    try {
-      const response = await fetch('/api/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Operation failed and could not parse error.' }));
-        throw new Error(errorData.message || 'Failed to save social links.');
-      }
-      await response.json(); // Contains the updated settings
-      alert('Social links saved!');
-      refreshData('settings'); // Refresh settings from server
-      // Or, if API returns the full updated settings object:
-      // const updatedSettings = await response.json();
-      // setMainHeader(updatedSettings.mainHeader || '');
-      // setSocialLinks({ 
-      //   twitter: updatedSettings.twitterUrl || '', 
-      //   instagram: updatedSettings.instagramUrl || '', 
-      //   snapchat: updatedSettings.snapchatUrl || '' 
-      // });
-    } catch (error) {
-      console.error('Error saving social links:', error);
-      alert(`Error saving social links: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
+    alert('Static mode: Saving social links is disabled.');
+    // try {
+    //   const response = await fetch('/api/settings/social', {
+    //     method: 'POST',
+    //     headers: { 'Content-Type': 'application/json' },
+    //     body: JSON.stringify(currentSocialLinks),
+    //   });
+    //   if (!response.ok) {
+    //     const errorData = await response.json().catch(() => ({ message: 'Failed to save social links.' }));
+    //     throw new Error(errorData.message || 'Failed to save social links.');
+    //   }
+    //   alert('Social links updated successfully!');
+    //   refreshData('settings');
+    // } catch (error) {
+    //   console.error('Error saving social links:', error);
+    //   alert(`Error saving social links: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    // }
   };
 
   const handleSaveMainHeader = async () => {
-    const payload = {
-      mainHeader: currentMainHeader || null, // currentMainHeader is linked to the input field
-      twitterUrl: currentSocialLinks.twitter || null,
-      instagramUrl: currentSocialLinks.instagram || null,
-      snapchatUrl: currentSocialLinks.snapchat || null,
-    };
-    try {
-      const response = await fetch('/api/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Operation failed and could not parse error.' }));
-        throw new Error(errorData.message || 'Failed to save main header.');
-      }
-      await response.json(); // Contains the updated settings
-      alert('Main header saved!');
-      refreshData('settings'); // Refresh settings from server
-    } catch (error) {
-      console.error('Error saving main header:', error);
-      alert(`Error saving main header: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
+    alert('Static mode: Saving main header is disabled.');
+    // try {
+    //   const response = await fetch('/api/settings/mainHeader', {
+    //     method: 'POST',
+    //     headers: { 'Content-Type': 'application/json' },
+    //     body: JSON.stringify({ mainHeader: currentMainHeader }),
+    //   });
+    //   if (!response.ok) {
+    //     const errorData = await response.json().catch(() => ({ message: 'Failed to save main header.' }));
+    //     throw new Error(errorData.message || 'Failed to save main header.');
+    //   }
+    //   alert('Main header updated successfully!');
+    //   refreshData('settings');
+    // } catch (error) {
+    //   console.error('Error saving main header:', error);
+    //   alert(`Error saving main header: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    // }
   };
 
   // Login Form
@@ -533,8 +523,8 @@ const AdminPage: React.FC<AdminPageProps> = ({
                                         <span className="ml-2 px-1.5 sm:px-2 py-0.5 text-xs rounded-full whitespace-nowrap" style={{ backgroundColor: section.accent, color: 'white' }}>{section.accent}</span>
                                     </div>
                                     <div className="flex items-center space-x-1 sm:space-x-2 self-end sm:self-center">
-                                        <button onClick={() => handleSectionOrderChange(index, 'up')} disabled={index === 0} className="p-1 sm:p-1.5 text-gray-400 hover:text-white disabled:opacity-50"><ArrowUpCircle size={18} /></button>
-                                        <button onClick={() => handleSectionOrderChange(index, 'down')} disabled={index === currentSections.length - 1} className="p-1 sm:p-1.5 text-gray-400 hover:text-white disabled:opacity-50"><ArrowDownCircle size={18} /></button>
+                                        <button onClick={() => handleSectionOrderChange(section.id, 'up')} disabled={index === 0} className="p-1 sm:p-1.5 text-gray-400 hover:text-white disabled:opacity-50"><ArrowUpCircle size={18} /></button>
+                                        <button onClick={() => handleSectionOrderChange(section.id, 'down')} disabled={index === currentSections.length - 1} className="p-1 sm:p-1.5 text-gray-400 hover:text-white disabled:opacity-50"><ArrowDownCircle size={18} /></button>
                                         <button onClick={() => handleOpenEditSectionModal(section)} className="p-1 sm:p-1.5 text-blue-400 hover:text-blue-300"><Edit3 size={18}/></button>
                                         <button onClick={() => handleDeleteSection(section.id)} className="p-1 sm:p-1.5 text-red-400 hover:text-red-300"><Trash2 size={18}/></button>
                                     </div>

@@ -20,25 +20,21 @@ interface WritingSectionProps {
   accent: AccentColor;
 }
 
-const LikeButton = ({ poemId }: { poemId: string }) => {
+const LikeButton = ({ poemId, initialLikes }: { poemId: string; initialLikes: number }) => {
   const [isLiked, setIsLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(0);
+  const [likeCount, setLikeCount] = useState(initialLikes);
 
   useEffect(() => {
     const storedLikes = localStorage.getItem(`poem-${poemId}-liked`);
-    const storedCount = localStorage.getItem(`poem-${poemId}-count`);
     if (storedLikes === 'true') setIsLiked(true);
-    if (storedCount) setLikeCount(parseInt(storedCount));
   }, [poemId]);
 
   const handleLike = () => {
     const newLikeState = !isLiked;
     setIsLiked(newLikeState);
-    const newCount = newLikeState ? likeCount + 1 : likeCount - 1;
-    setLikeCount(newCount);
+    setLikeCount(prevCount => newLikeState ? prevCount + 1 : Math.max(0, prevCount - 1));
     
     localStorage.setItem(`poem-${poemId}-liked`, String(newLikeState));
-    localStorage.setItem(`poem-${poemId}-count`, String(newCount));
   };
 
   return (
@@ -204,7 +200,7 @@ function WritingSection({ id, title, icon, writings, accent }: WritingSectionPro
                         />
                       </span>
                     </motion.h3>
-                    <LikeButton poemId={writing.id} />
+                    <LikeButton poemId={writing.id} initialLikes={writing.likes || 0} />
                   </div>
                   {writing.content && (
                     <motion.div 

@@ -6,7 +6,7 @@ import AdminPage from './components/AdminPage';
 // import { allWritings as importedWritings, WritingData } from './data/writings'; // Will fetch from API
 
 // At the top with other constants or inside the App component if preferred
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'; 
 
 // Define available accent colors
 export type AccentColor = 'rose' | 'purple' | 'blue' | 'red' | 'amber' | 'emerald';
@@ -43,6 +43,11 @@ export type SectionConfig = Omit<SectionData, 'createdAt' | 'updatedAt'> & {
   navClass: string;
   bgClass: string;
 };
+
+// New type for sections combined with their writings
+interface SectionWithWritings extends SectionConfig {
+  writings: WritingData[];
+}
 
 // Helper to map icon names (strings) to actual components
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -101,50 +106,46 @@ function App() {
     }
     
     try {
-      let newWritings = writings;
-      let newSectionsConfig = sections;
-      let newMainHeader = mainHeader;
-      let newSocialLinks = socialLinks;
-
+      // For 'all' or 'writings', update writings state
       if (dataType === 'all' || dataType === 'writings') {
-        const writingsRes = await fetch(`${API_BASE_URL}/api/writings`);
+        const writingsRes = await fetch(`${API_BASE_URL}/poems`);
         if (!writingsRes.ok) {
           throw new Error(`Failed to fetch writings: ${writingsRes.status} ${writingsRes.statusText}`);
         }
-        newWritings = await writingsRes.json() as WritingData[];
+        const newWritings = await writingsRes.json() as WritingData[];
         setWritings(newWritings);
       }
 
+      // For 'all' or 'sections', update sections state
       if (dataType === 'all' || dataType === 'sections') {
-        const sectionsRes = await fetch(`${API_BASE_URL}/api/sections`);
+        const sectionsRes = await fetch(`${API_BASE_URL}/sections`); 
         if (!sectionsRes.ok) {
           throw new Error(`Failed to fetch sections: ${sectionsRes.status} ${sectionsRes.statusText}`);
         }
-        const sectionsDataFromAPI = await sectionsRes.json() as SectionData[];
-        newSectionsConfig = sectionsDataFromAPI
+        const fetchedSectionsData = await sectionsRes.json() as SectionData[];
+        const newSectionConfigs = fetchedSectionsData
           .sort((a, b) => a.order - b.order)
           .map(sec => ({
             ...sec,
-            icon: iconMap[sec.iconName] || BookOpen,
+            icon: iconMap[sec.iconName] || BookOpen, 
             ...getAccentClasses(sec.accent as AccentColor),
           }));
-        setSections(newSectionsConfig);
+        setSections(newSectionConfigs);
       }
-
+      
+      // For 'all' or 'settings', update settings states
       if (dataType === 'all' || dataType === 'settings') {
-        const settingsRes = await fetch(`${API_BASE_URL}/api/settings`);
+        const settingsRes = await fetch(`${API_BASE_URL}/settings`); 
         if (!settingsRes.ok) {
           throw new Error(`Failed to fetch settings: ${settingsRes.status} ${settingsRes.statusText}`);
         }
         const settingsData = await settingsRes.json() as SiteSettingsData;
-        newMainHeader = settingsData.mainHeader || 'Fictitious Scribbles';
-        newSocialLinks = {
+        setMainHeader(settingsData.mainHeader || 'Fictitious Scribbles');
+        setSocialLinks({
           twitter: settingsData.twitterUrl || '',
           instagram: settingsData.instagramUrl || '',
           snapchat: settingsData.snapchatUrl || '',
-        };
-        setMainHeader(newMainHeader);
-        setSocialLinks(newSocialLinks);
+        });
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -161,14 +162,35 @@ function App() {
     fetchData('all');
   }, [fetchData]); // Now fetchData is stable due to useCallback
 
-  // Group writings by their section ID for easier access
-  // The `section.writings` will now be derived here for `sectionsWithWritings`
-  const sectionsWithWritings = useMemo(() => {
-    return sections.map(section => ({
+  const sectionsWithWritings = useMemo((): SectionWithWritings[] => {
+    const categorizedSections: SectionWithWritings[] = sections.map(section => ({
       ...section,
       writings: writings.filter(writing => writing.sectionId === section.id)
     }));
-  }, [writings, sections]);
+
+    const uncategorizedWritings = writings.filter(writing => !writing.sectionId);
+
+    if (uncategorizedWritings.length > 0) {
+      const uncategorizedSectionData: SectionConfig = {
+        id: 'uncategorized',
+        title: 'Uncategorized',
+        iconName: 'BookOpen',
+        accent: 'emerald',
+        order: sections.length + 1, // Ensure order is distinct
+        icon: iconMap['BookOpen'] || BookOpen,
+        iconClass: getAccentClasses('emerald').iconClass,
+        navClass: getAccentClasses('emerald').navClass,
+        bgClass: getAccentClasses('emerald').bgClass,
+      };
+      const uncategorizedSection: SectionWithWritings = {
+        ...uncategorizedSectionData,
+        writings: uncategorizedWritings
+      };
+      return [...categorizedSections, uncategorizedSection].sort((a,b) => a.order - b.order);
+    }
+
+    return categorizedSections.sort((a,b) => a.order - b.order); // Also sort here if no uncategorized
+  }, [writings, sections, iconMap]);
 
   // Helper function to handle smooth scrolling and highlight
   const handlePoemLinkClick = (event: React.MouseEvent<HTMLAnchorElement>, sectionId: string, poemId: string) => {
@@ -409,16 +431,22 @@ function App() {
           )}
 
           <main className="max-w-4xl mx-auto px-4 py-12">
-            {sectionsWithWritings.map((section) => (
-              <WritingSection
-                key={section.id}
-                id={section.id}
-                title={section.title}
-                icon={<section.icon className={section.iconClass} />}
-                writings={section.writings}
-                accent={section.accent as AccentColor}
-              />
-            ))}
+            {sectionsWithWritings.length > 0 ? (
+              sectionsWithWritings.map((section) => (
+                <WritingSection
+                  key={section.id}
+                  id={section.id}
+                  title={section.title}
+                  icon={<section.icon className={section.iconClass} />}
+                  writings={section.writings}
+                  accent={section.accent as AccentColor}
+                />
+              ))
+            ) : (
+              // This fallback might now only appear if there are truly no writings and no sections.
+              // Or if writings exist but somehow sectionsWithWritings is still empty (shouldn't happen with uncategorized logic)
+              !isLoading && <p className="text-center text-gray-500">No poems have been published yet.</p>
+            )}
           </main>
         </>
       )}

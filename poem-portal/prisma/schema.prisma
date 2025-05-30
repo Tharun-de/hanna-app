@@ -1,0 +1,49 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Poem {
+  id        String   @id @default(cuid())
+  title     String
+  content   String   @db.Text // Use @db.Text for potentially long content
+  date      DateTime? // Optional date for the poem
+  mood      String?   // Optional mood
+  likes     Int?      @default(0) // Optional likes, default to 0
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  sectionId String? // Foreign key for Section
+  section   Section? @relation(fields: [sectionId], references: [id])
+}
+
+model Section {
+  id        String   @id @default(cuid())
+  title     String
+  iconName  String   // e.g., "BookOpen", "Heart"
+  accent    String   // e.g., "rose", "blue"
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  poems     Poem[]   // Relation to multiple Poems
+}
+
+model SiteSettings {
+  id            Int      @id @default(1) // Fixed ID for the single settings row
+  mainHeader    String?
+  twitterUrl    String?
+  instagramUrl  String?
+  snapchatUrl   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}

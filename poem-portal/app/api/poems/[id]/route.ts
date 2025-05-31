@@ -5,9 +5,9 @@ import { Prisma } from '@/app/generated/prisma'; // Reverted to original custom 
 // GET /api/poems/[id] - Fetch a single poem
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
-  const { id } = params; // Access params via context
+  const id = context.params.id; // Access params via context
   try {
     const poem = await prisma.poem.findUnique({
       where: { id },
@@ -28,9 +28,9 @@ export async function GET(
 // PUT /api/poems/[id] - Update a poem
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
-  const { id } = params; // Access params via context
+  const id = context.params.id; // Access params via context
   try {
     const body = await request.json();
     const { title, content, sectionId, date, mood, likes } = body;
@@ -83,9 +83,9 @@ export async function PUT(
 // DELETE /api/poems/[id] - Delete a poem
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
-  const { id } = params; // Access params via context
+  const id = context.params.id; // Access params via context
   try {
     await prisma.poem.delete({
       where: { id },

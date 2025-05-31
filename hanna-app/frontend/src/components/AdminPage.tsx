@@ -171,7 +171,7 @@ const AdminPage: React.FC<AdminPageProps> = ({
       likes?: number | null; // Add likes to payload type
     } = {
       title: formData.title || null, 
-      content: formData.content!,
+      content: formData.content!, 
     };
 
     if (formData.sectionId && formData.sectionId !== '__ADD_NEW_SECTION__' && formData.sectionId !== '') {

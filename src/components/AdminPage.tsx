@@ -200,9 +200,9 @@ const AdminPage: React.FC<AdminPageProps> = ({
     //   alert(`Error saving writing: ${error instanceof Error ? error.message : 'Unknown error'}`);
     // }
     // Instead of saving, just close the modal for UI feedback in static mode
-    setShowAddEditModal(false);
-    setEditingWriting(null);
-    setFormData({ title: '', content: '', sectionId: undefined, mood: '', date: '', likes: 0 });
+      setShowAddEditModal(false);
+      setEditingWriting(null); 
+      setFormData({ title: '', content: '', sectionId: undefined, mood: '', date: '', likes: 0 });
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -288,8 +288,8 @@ const AdminPage: React.FC<AdminPageProps> = ({
     //   alert(`Error saving section: ${error instanceof Error ? error.message : 'Unknown error'}`);
     // }
     // Instead of saving, just close the modal for UI feedback
-    setShowSectionModal(false);
-    setEditingSection(null);
+      setShowSectionModal(false);
+      setEditingSection(null);
   };
   
   const handleSectionFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {

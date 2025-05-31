@@ -127,12 +127,12 @@ function App() {
           .sort((a, b) => a.order - b.order)
           .map(sec => ({
             ...sec,
-            icon: iconMap[sec.iconName] || BookOpen, 
+            icon: iconMap[sec.iconName] || BookOpen,
             ...getAccentClasses(sec.accent as AccentColor),
           }));
         setSections(newSectionConfigs);
       }
-      
+
       // For 'all' or 'settings', update settings states
       if (dataType === 'all' || dataType === 'settings') {
         const settingsRes = await fetch(`${API_BASE_URL}/settings`); 
@@ -433,14 +433,14 @@ function App() {
           <main className="max-w-4xl mx-auto px-4 py-12">
             {sectionsWithWritings.length > 0 ? (
               sectionsWithWritings.map((section) => (
-                <WritingSection
-                  key={section.id}
-                  id={section.id}
-                  title={section.title}
-                  icon={<section.icon className={section.iconClass} />}
-                  writings={section.writings}
-                  accent={section.accent as AccentColor}
-                />
+              <WritingSection
+                key={section.id}
+                id={section.id}
+                title={section.title}
+                icon={<section.icon className={section.iconClass} />}
+                writings={section.writings}
+                accent={section.accent as AccentColor}
+              />
               ))
             ) : (
               // This fallback might now only appear if there are truly no writings and no sections.

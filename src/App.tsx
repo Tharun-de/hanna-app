@@ -134,7 +134,7 @@ function App() {
     }
     setIsMobileMenuOpen(false);
   };
-  
+
   const handleMobileLinkClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault(); 
     const href = event.currentTarget.getAttribute('href');
@@ -165,7 +165,7 @@ function App() {
     return (
       <div className="min-h-screen bg-gray-900 text-gray-200 flex items-center justify-center p-4">
         <div className="max-w-md w-full text-center">
-          <AlertCircle className="mx-auto h-16 w-16 text-red-400" />
+            <AlertCircle className="mx-auto h-16 w-16 text-red-400" />
           <h1 className="text-2xl font-serif mb-4">An error occurred</h1>
           <p className="text-gray-400 mb-6">{error}</p>
           {/* Button to retry can be removed or disabled if no fetchData exists */}
@@ -184,8 +184,8 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-200">
-      <button 
-        onClick={() => setShowAdmin(true)} 
+      <button
+        onClick={() => setShowAdmin(true)}
         className="fixed bottom-4 right-4 p-3 bg-gray-800 hover:bg-gray-700 rounded-full shadow-lg transition-colors z-50" // Ensure z-index is high enough
         title="Admin Panel"
       >
@@ -193,10 +193,10 @@ function App() {
       </button>
 
       {showAdmin && (
-        <AdminPage 
-          writings={writings}
+        <AdminPage
+          writings={writings} 
           mainHeader={mainHeader}
-          sections={sections}
+          sections={sections} 
           iconMap={iconMap}
           socialLinks={socialLinks}
           refreshData={async () => { 
@@ -206,7 +206,7 @@ function App() {
           // onClose={() => setShowAdmin(false)} // Keep as per original AdminPage design
         />
       )}
-      
+
       {!showAdmin && ( // This condition might need to be adjusted based on how AdminPage is displayed
         <>
           <header className="relative h-screen flex items-center justify-center overflow-hidden">
@@ -295,7 +295,7 @@ function App() {
           </nav>
 
           {isMobileMenuOpen && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, x: "-100%" }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: "-100%" }}
@@ -315,7 +315,7 @@ function App() {
                 {sectionsWithWritings.map((section) => (
                   <div key={`${section.id}-mobile`}>
                     <a 
-                      href={`#${section.id}`} 
+                      href={`#${section.id}`}
                       onClick={(e) => {
                         handleMobileLinkClick(e); // Use the existing handler
                         // Direct scroll and close for main section links

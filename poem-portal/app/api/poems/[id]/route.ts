@@ -1,15 +1,12 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/app/lib/prisma';
 import { Prisma } from '@/app/generated/prisma'; // For Prisma-specific error types
 
-interface RouteParams {
-  params: {
-    id: string;
-  };
-}
-
 // GET /api/poems/[id] - Fetch a single poem
-export async function GET(request: Request, { params }: RouteParams) {
+export async function GET(
+  request: NextRequest, 
+  { params }: { params: { id: string } }
+) {
   const { id } = params;
   try {
     const poem = await prisma.poem.findUnique({
@@ -29,7 +26,10 @@ export async function GET(request: Request, { params }: RouteParams) {
 }
 
 // PUT /api/poems/[id] - Update a poem
-export async function PUT(request: Request, { params }: RouteParams) {
+export async function PUT(
+  request: NextRequest, 
+  { params }: { params: { id: string } }
+) {
   const { id } = params;
   try {
     const body = await request.json();
@@ -81,7 +81,10 @@ export async function PUT(request: Request, { params }: RouteParams) {
 }
 
 // DELETE /api/poems/[id] - Delete a poem
-export async function DELETE(request: Request, { params }: RouteParams) {
+export async function DELETE(
+  request: NextRequest, 
+  { params }: { params: { id: string } }
+) {
   const { id } = params;
   try {
     await prisma.poem.delete({

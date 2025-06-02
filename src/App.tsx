@@ -2,13 +2,12 @@ import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { Feather, Heart, Siren as Fire, Star, Sparkles, BookOpen, Menu, X, Settings, Twitter, Instagram, MessageSquare, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import WritingSection from './components/WritingSection';
-import AdminPage from './components/AdminPage';
-// import { allWritings as importedWritings, WritingData } from './data/writings'; // Will fetch from API <<<< KEEP COMMENTED
+import { client, poemsQuery, categoriesQuery, siteSettingsQuery, type Poem, type Category, type SiteSettings } from './lib/sanity';
 
 // Define available accent colors
 export type AccentColor = 'rose' | 'purple' | 'blue' | 'red' | 'amber' | 'emerald';
 
-// Consistent type for Writing data
+// Updated type for Writing data to match Sanity Poem structure
 export interface WritingData {
   id: string;
   title?: string | null;
@@ -20,6 +19,10 @@ export interface WritingData {
   createdAt: string; 
   updatedAt: string; 
   section?: SectionData | null;
+  author?: string;
+  tags?: string[];
+  excerpt?: string;
+  featuredImage?: any;
 }
 
 // Type for raw Section data
@@ -52,13 +55,10 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 };
 
 export interface SocialLinks {
-  twitter: string;
-  instagram: string;
-  snapchat: string;
+  twitter?: string;
+  instagram?: string;
+  snapchat?: string;
 }
-
-// Type for settings data from API/Prisma - NO LONGER USED
-// interface SiteSettingsData { ... }
 
 // Helper function to create UI-specific class names
 const getAccentClasses = (accent: AccentColor) => {
@@ -69,45 +69,85 @@ const getAccentClasses = (accent: AccentColor) => {
   };
 };
 
-// Example Static Data
-const exampleSections: SectionConfig[] = [
-  { 
-    id: 'section1', 
-    title: 'Welcome', 
-    iconName: 'BookOpen', 
-    accent: 'blue', 
-    order: 1,
-    icon: iconMap['BookOpen'] || BookOpen,
-    ...getAccentClasses('blue')
-  },
-];
+// Helper function to convert Sanity Category to SectionConfig
+const categoryToSection = (category: Category): SectionConfig => {
+  const accent = category.color as AccentColor;
+  const icon = iconMap[category.icon] || Feather;
+  
+  return {
+    id: category._id,
+    title: category.title,
+    iconName: category.icon,
+    accent,
+    order: category.order,
+    icon,
+    ...getAccentClasses(accent)
+  };
+};
 
-const exampleWritings: WritingData[] = [
-  { 
-    id: 'writing1', 
-    title: 'Static Welcome Note', 
-    content: 'This is a statically loaded piece of content. The backend connections have been removed.', 
-    sectionId: 'section1', 
-    createdAt: new Date().toISOString(), 
-    updatedAt: new Date().toISOString(),
-    mood: 'Neutral',
-    date: new Date().toLocaleDateString(),
-    likes: 0
-  },
-];
-
+// Helper function to convert Sanity Poem to WritingData
+const poemToWriting = (poem: Poem): WritingData => ({
+  id: poem._id,
+  title: poem.title,
+  content: poem.content,
+  sectionId: poem.category?._id || 'uncategorized', // Use category ID as section ID
+  author: poem.author,
+  tags: poem.tags,
+  excerpt: poem.excerpt,
+  createdAt: poem.publishedAt,
+  updatedAt: poem.publishedAt,
+  date: new Date(poem.publishedAt).toLocaleDateString(),
+  likes: 0, // Default value
+  mood: poem.tags?.[0] || 'Reflective', // Use first tag as mood
+  featuredImage: poem.featuredImage,
+});
 
 function App() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [showAdmin, setShowAdmin] = useState(false);
   
-  const [isLoading, setIsLoading] = useState(false); // Default to false
-  const [error, setError] = useState<string | null>(null); // Default to null
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const [writings, setWritings] = useState<WritingData[]>(exampleWritings);
-  const [sections, setSections] = useState<SectionConfig[]>(exampleSections); 
-  const [mainHeader, setMainHeader] = useState<string>('Hanna (Static Mode)');
-  const [socialLinks, setSocialLinks] = useState<SocialLinks>({ twitter: '#', instagram: '#', snapchat: '#' });
+  const [writings, setWritings] = useState<WritingData[]>([]);
+  const [sections, setSections] = useState<SectionConfig[]>([]); 
+  const [siteSettings, setSiteSettings] = useState<SiteSettings | null>(null);
+
+  // Fetch categories, poems, and site settings from Sanity
+  const fetchData = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      // Fetch categories, poems, and site settings in parallel
+      const [categories, poems, settings]: [Category[], Poem[], SiteSettings | null] = await Promise.all([
+        client.fetch(categoriesQuery),
+        client.fetch(poemsQuery),
+        client.fetch(siteSettingsQuery)
+      ]);
+      
+      // Convert categories to sections
+      const sectionsData = categories.map(categoryToSection);
+      setSections(sectionsData);
+      
+      // Convert poems to writings
+      const writingsData = poems.map(poemToWriting);
+      setWritings(writingsData);
+      
+      // Set site settings
+      setSiteSettings(settings);
+      
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setError('Failed to load content. Please try again later.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Load data on component mount
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const sectionsWithWritings = useMemo(() => {
     return sections.map(section => ({
@@ -115,6 +155,11 @@ function App() {
       writings: writings.filter(writing => writing.sectionId === section.id)
     }));
   }, [writings, sections]);
+
+  // Get display values with fallbacks
+  const displayTitle = siteSettings?.title || 'Hanna';
+  const displaySubtitle = siteSettings?.subtitle || 'A sanctuary for poetry, prose, and the depths of human emotion';
+  const socialLinks: SocialLinks = siteSettings?.socialMedia || {};
 
   const handlePoemLinkClick = (event: React.MouseEvent<HTMLAnchorElement>, sectionId: string, poemId: string) => {
     event.preventDefault();
@@ -161,23 +206,35 @@ function App() {
     }
   };
   
-  if (error) { 
+  // Error state
+  if (error && !isLoading) {
     return (
       <div className="min-h-screen bg-gray-900 text-gray-200 flex items-center justify-center p-4">
         <div className="max-w-md w-full text-center">
+          <div className="mb-6">
             <AlertCircle className="mx-auto h-16 w-16 text-red-400" />
-          <h1 className="text-2xl font-serif mb-4">An error occurred</h1>
+          </div>
+          <h1 className="text-2xl font-serif mb-4">Unable to load content</h1>
           <p className="text-gray-400 mb-6">{error}</p>
-          {/* Button to retry can be removed or disabled if no fetchData exists */}
+          <button
+            onClick={() => fetchData()}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+          >
+            Try again
+          </button>
         </div>
       </div>
     );
   }
   
-  if (isLoading) { 
+  // Loading state
+  if (isLoading && writings.length === 0 && sections.length === 0) {
     return (
       <div className="min-h-screen bg-gray-900 text-gray-200 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400 mx-auto mb-4"></div>
+          <div className="text-2xl font-serif">Loading Poetry...</div>
+        </div>
       </div>
     );
   }
@@ -185,35 +242,21 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-900 text-gray-200">
       <button
-        onClick={() => setShowAdmin(true)}
-        className="fixed bottom-4 right-4 p-3 bg-gray-800 hover:bg-gray-700 rounded-full shadow-lg transition-colors z-50" // Ensure z-index is high enough
-        title="Admin Panel"
+        onClick={() => window.open('https://hanna-poetry.sanity.studio/', '_blank')}
+        className="fixed bottom-4 right-4 p-3 bg-gray-800 hover:bg-gray-700 rounded-full shadow-lg transition-colors z-50"
+        title="Open Sanity Studio (Content Management)"
       >
         <Settings size={24} />
       </button>
 
-      {showAdmin && (
-        <AdminPage
-          writings={writings} 
-          mainHeader={mainHeader}
-          sections={sections} 
-          iconMap={iconMap}
-          socialLinks={socialLinks}
-          refreshData={async () => { 
-            console.log("Admin operation attempted in static mode. Data changes will not persist."); 
-            // alert("Admin Page is in read-only mode. Changes will not be saved."); // Optional user alert
-          }}
-          // onClose={() => setShowAdmin(false)} // Keep as per original AdminPage design
-        />
-      )}
-
-      {!showAdmin && ( // This condition might need to be adjusted based on how AdminPage is displayed
         <>
           <header className="relative h-screen flex items-center justify-center overflow-hidden">
             <div 
               className="absolute inset-0 bg-cover bg-center z-0 opacity-30"
               style={{
-                backgroundImage: "url('https://images.unsplash.com/photo-1533134486753-c833f0ed4866?auto=format&fit=crop&q=80')"
+              backgroundImage: siteSettings?.theme?.backgroundImage 
+                ? `url(${siteSettings.theme.backgroundImage})`
+                : "url('https://images.unsplash.com/photo-1533134486753-c833f0ed4866?auto=format&fit=crop&q=80')"
               }}
             />
             <div className="relative z-10 text-center px-4">
@@ -223,7 +266,7 @@ function App() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, ease: "easeOut" }}
               >
-                {mainHeader}
+              {displayTitle}
               </motion.h1>
               <motion.p 
                 className="text-xl md:text-2xl max-w-2xl mx-auto text-gray-300 italic"
@@ -231,14 +274,14 @@ function App() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
               >
-                A sanctuary for poetry, prose, and the depths of human emotion
+              {displaySubtitle}
               </motion.p>
             </div>
           </header>
 
           <nav className="sticky top-0 bg-gray-900/95 backdrop-blur-sm border-b border-gray-800 z-40">
             <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-              <div className="text-lg font-semibold">{mainHeader}</div>
+            <div className="text-lg font-semibold">{displayTitle}</div>
               <div className="hidden md:flex items-center justify-center space-x-6 flex-wrap">
                 {sectionsWithWritings.map((section) => (
                   <div key={section.id} className="relative group my-1">
@@ -381,7 +424,6 @@ function App() {
             )}
           </main>
         </>
-      )}
 
       <footer className="bg-gray-900 border-t border-gray-800 py-8">
         <div className="max-w-4xl mx-auto px-4 text-center text-gray-400">
@@ -408,7 +450,7 @@ function App() {
             )}
           </div>
           <p className="text-sm text-gray-500">
-            Penned by Yancey
+            {siteSettings?.authorInfo?.name || 'Penned by Yancey'}
           </p>
         </div>
       </footer>

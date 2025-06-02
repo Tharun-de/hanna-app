@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { WritingData, SectionConfig, AccentColor, SocialLinks } from '../App';
 
 // UPDATED API_BASE_URL
-const API_BASE_URL = 'http://localhost:3000/api'; // Points to our new Next.js API
+const API_BASE_URL = 'http://localhost:5000/api'; // Points to our new backend API
 
 // Modal Component
 const Modal: React.FC<{ isOpen: boolean; onClose: () => void; title: string; children: React.ReactNode }> = ({ isOpen, onClose, title, children }) => {

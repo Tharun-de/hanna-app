@@ -1,116 +1,147 @@
-# Hanna - Personal Writing & Reflection App
+# Hanna Poetry App
 
-A clean, modern web application for personal writing, journaling, and reflection. Built with React, TypeScript, Express, and PostgreSQL.
+A modern, full-stack poetry application built with React (frontend) and Node.js/Express (backend).
 
-## 🏗️ Project Structure
+## Project Structure
 
 ```
 hanna-app/
-├── frontend/          # React + TypeScript + Vite frontend
-│   ├── src/          # Source code
-│   ├── package.json  # Frontend dependencies
-│   └── ...           # Config files (Vite, TypeScript, Tailwind)
-├── backend/          # Express + Prisma backend
-│   ├── server.js     # Main server file
-│   ├── prisma/       # Database schema
-│   ├── package.json  # Backend dependencies
-│   └── .env.example  # Environment variables template
-└── README.md         # This file
+├── frontend/          # React frontend application
+│   ├── src/
+│   ├── public/
+│   └── package.json
+├── backend/           # Node.js/Express backend API
+│   ├── src/
+│   │   ├── routes/    # API routes
+│   │   ├── middleware/# Custom middleware
+│   │   ├── models/    # Data models
+│   │   ├── types/     # TypeScript types
+│   │   └── index.ts   # Main server file
+│   └── package.json
+└── README.md
 ```
 
-## 🚀 Quick Start
+## Features
+
+### Frontend
+- 🎨 Modern React UI with TypeScript
+- 🎭 Beautiful animations with Framer Motion
+- 📱 Responsive design with Tailwind CSS
+- 🎯 Clean component architecture
+- ⚡ Fast development with Vite
+
+### Backend
+- 🚀 Express.js server with TypeScript
+- 🔐 JWT authentication
+- 📝 CRUD operations for poems
+- 🛡️ Security middleware (Helmet, CORS)
+- 📊 Request logging with Morgan
+- 🎯 Clean API architecture
+
+## Quick Start
 
 ### Prerequisites
-- Node.js 18+ 
+- Node.js (v18 or higher)
 - npm or yarn
-- Supabase account (free tier works)
 
-### 1. Clone and Setup
+### Setup
+
+1. **Clone and navigate to the project:**
 ```bash
 cd hanna-app
 ```
 
-### 2. Backend Setup
+2. **Setup Backend:**
 ```bash
 cd backend
 npm install
-cp .env.example .env
-# Edit .env with your Supabase password
-npm run db:push
 npm run dev
 ```
+The backend will start on http://localhost:5000
 
-### 3. Frontend Setup (in new terminal)
+3. **Setup Frontend (in a new terminal):**
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
+The frontend will start on http://localhost:5173
 
-### 4. Access the App
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:3001
+## API Endpoints
 
-## 🔧 Environment Variables
+### Authentication
+- `POST /api/auth/register` - Register a new user
+- `POST /api/auth/login` - Login user
 
-Copy `backend/.env.example` to `backend/.env` and update:
+### Poems
+- `GET /api/poems` - Get all public poems
+- `GET /api/poems/my` - Get user's poems (protected)
+- `GET /api/poems/:id` - Get single poem
+- `POST /api/poems` - Create new poem (protected)
+- `PUT /api/poems/:id` - Update poem (protected)
+- `DELETE /api/poems/:id` - Delete poem (protected)
 
-```env
-DATABASE_URL="postgresql://postgres:[YOUR-PASSWORD]@db.szahkpbxsdvhkspihefj.supabase.co:5432/postgres"
-PORT=3001
+### Health Check
+- `GET /health` - Server health check
+
+## Environment Variables
+
+### Backend (.env)
+```
 NODE_ENV=development
+PORT=5000
+JWT_SECRET=your-super-secret-jwt-key-here
+FRONTEND_URL=http://localhost:5173
 ```
 
-## 📝 Features
+## Development
 
-- ✅ Create and edit writings
-- ✅ Organize content in sections
-- ✅ Rich text editing
-- ✅ Responsive design
-- ✅ Clean, modern UI
+### Backend Development
+```bash
+cd backend
+npm run dev          # Start development server
+npm run build        # Build for production
+npm start           # Start production server
+npm run lint        # Run ESLint
+```
 
-## 🛠️ Tech Stack
+### Frontend Development
+```bash
+cd frontend
+npm run dev         # Start development server
+npm run build       # Build for production
+npm run preview     # Preview production build
+npm run lint        # Run ESLint
+```
 
-**Frontend:**
-- React 18 + TypeScript
-- Vite (build tool)
-- Tailwind CSS (styling)
+## Technologies
+
+### Frontend
+- React 18
+- TypeScript
+- Vite
+- Tailwind CSS
+- Framer Motion
 - Lucide React (icons)
 
-**Backend:**
+### Backend
+- Node.js
 - Express.js
-- Prisma ORM
-- PostgreSQL (Supabase)
-- CORS enabled
+- TypeScript
+- JWT for authentication
+- bcryptjs for password hashing
+- Helmet for security
+- CORS for cross-origin requests
+- Morgan for logging
 
-## 📦 Available Scripts
-
-**Backend:**
-- `npm run dev` - Start development server
-- `npm run db:push` - Push schema to database
-- `npm start` - Start production server
-
-**Frontend:**
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
-
-## 🚀 Deployment
-
-The app is ready for deployment to:
-- **Frontend**: Vercel, Netlify, or any static host
-- **Backend**: Vercel, Railway, Render, or any Node.js host
-
-Make sure to set environment variables in your deployment platform.
-
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-## 📄 License
+## License
 
-MIT License - feel free to use this project for personal or commercial purposes. 
+This project is licensed under the MIT License. 
